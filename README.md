@@ -16,7 +16,7 @@ For style transfer, we will load a pre-trained network (likely VGG16 or VGG19) d
 1. _content loss_—the difference between our content image (the image we wish to stylize) and (stylized) output images. This can be computed by passing the input and output through some network and calculating the Euclidean distance between the internal layers of the  network.
 2. _style loss_—the difference between our style image (the image that we used to style our content image) and (stylized) output images. This can be computed by passing the input and output through some network and comparing the Gram matrices of the outputs.
 
-We can then compute the gradients based on these losses and optimize, likely with Tensorflow. The algorithm that seems to be of choice for image stylization is (L-BFGS)[https://en.wikipedia.org/wiki/Limited-memory_BFGS], but SGD would also work.
+We can then compute the gradients based on these losses and optimize, likely with Tensorflow. The algorithm that seems to be of choice for image stylization is [L-BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS), but SGD would also work.
 
 ##### Image colorization (maybe)
 For image colorization, we will use Richard Zhang's CNN-based approach, as outlined in his [2016 paper](https://arxiv.org/pdf/1603.08511.pdf). 
