@@ -315,5 +315,8 @@ def show_results(best_img, content_path, style_path, show_large_final=True):
 best_starry_night, best_loss = run_style_transfer('../img/Tuebingen_Neckarfront.jpg',
                                                   '../img/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
 
-show_results(best_starry_night, '../img/Tuebingen_Neckarfront.jpg',
-             '../img/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
+result = Image.fromarray(best_starry_night)
+result.save('best_starry_night.bmp')
+
+# show_results(best_starry_night, '../img/Tuebingen_Neckarfront.jpg',
+#              '../img/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
