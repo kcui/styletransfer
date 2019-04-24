@@ -28,4 +28,10 @@ For image colorization, we will use Richard Zhang's CNN-based approach, as outli
 * Python 3 with all dependencies (outlined in requirements.txt; run `pip install -r requirements.txt --user`)
 
 ### Running
-Once all requirements have been installed, run `python main.py` from the `src/` folder. This will run and save the resulting stylized image as a bitmap into the `src/` folder; if running on Google Compute Engine, you can download the file by clicking the settings gear in the top right corner, clicking ''Download file'', and putting the full filepath (something like `/home/<username>/styletransfer/src/<img_name>`).
+Once all requirements have been installed, run `python main.py` from the `src/` folder. This will run and save the resulting stylized image as a bitmap into the `src/` folder.
+
+If running on Google Compute Engine, first activate the virtual environment by running
+
+`source /home/ruizhao_zhu/.bashrc && source activate tf_gpu`
+
+and then running `python main.py`. After it finishes, you can download the file by clicking the settings gear in the top right corner, clicking ''Download file'', and putting the full filepath (something like `/home/<username>/styletransfer/src/<img_name>`).
