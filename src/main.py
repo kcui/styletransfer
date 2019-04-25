@@ -312,11 +312,11 @@ def show_results(best_img, content_path, style_path, show_large_final=True):
     plt.title('Output Image')
     plt.show()
 
-best_starry_night, best_loss = run_style_transfer('../img/Tuebingen_Neckarfront.jpg',
-                                                  '../img/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
 
-result = Image.fromarray(best_starry_night)
-result.save('best_starry_night.bmp')
+content_path = '../img/content_scili.jpg'
+style_path = '../img/style_starrynight.jpg'
 
-# show_results(best_starry_night, '../img/Tuebingen_Neckarfront.jpg',
-#              '../img/1024px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
+best_scili, best_loss = run_style_transfer(content_path, style_path)
+
+result = Image.fromarray(best_scili)
+result.save('best_scili.bmp')
