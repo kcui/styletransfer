@@ -314,7 +314,7 @@ def show_results(best_img, content_path, style_path, show_large_final=True):
 
 
 content_start = '../img/frames/frame'
-style_path = '../img/style_kandinsky.jpg.jpg'
+style_path = '../img/style_kandinsky.jpg'
 
 for i in range(16):
     content_path = content_start + str(i) + '.jpg'
