@@ -20,70 +20,6 @@ class VGG19:
     _, h, w, d     = input_img.shape
     print('constructing layers...')
     graph['input']   = tf.Variable(np.zeros((1, h, w, d), dtype=np.float32))
-
-    # print('LAYER GROUP 1')
-    # graph['conv1_1'] = self.conv_layer(graph['input'], W=self.get_weights(self.vgg_layers, 0))
-    # graph['relu1_1'] = self.relu_layer(graph['conv1_1'], b=self.get_bias(self.vgg_layers, 0))
-
-    # graph['conv1_2'] = self.conv_layer(graph['relu1_1'], W=self.get_weights(self.vgg_layers, 2))
-    # graph['relu1_2'] = self.relu_layer(graph['conv1_2'], b=self.get_bias(self.vgg_layers, 2))
-    
-    # graph['pool1']   = self.pool_layer(graph['relu1_2'])
-
-    # print('LAYER GROUP 2')  
-    # graph['conv2_1'] = self.conv_layer(graph['pool1'], W=self.get_weights(self.vgg_layers, 5))
-    # graph['relu2_1'] = self.relu_layer(graph['conv2_1'], b=self.get_bias(self.vgg_layers, 5))
-    
-    # graph['conv2_2'] = self.conv_layer(graph['relu2_1'], W=self.get_weights(self.vgg_layers, 7))
-    # graph['relu2_2'] = self.relu_layer(graph['conv2_2'], b=self.get_bias(self.vgg_layers, 7))
-    
-    # graph['pool2']   = self.pool_layer(graph['relu2_2'])
-    
-    # print('LAYER GROUP 3')
-    # graph['conv3_1'] = self.conv_layer(graph['pool2'], W=self.get_weights(self.vgg_layers, 10))
-    # graph['relu3_1'] = self.relu_layer(graph['conv3_1'], b=self.get_bias(self.vgg_layers, 10))
-
-    # graph['conv3_2'] = self.conv_layer(graph['relu3_1'], W=self.get_weights(self.vgg_layers, 12))
-    # graph['relu3_2'] = self.relu_layer(graph['conv3_2'], b=self.get_bias(self.vgg_layers, 12))
-
-    # graph['conv3_3'] = self.conv_layer(graph['relu3_2'], W=self.get_weights(self.vgg_layers, 14))
-    # graph['relu3_3'] = self.relu_layer(graph['conv3_3'], b=self.get_bias(self.vgg_layers, 14))
-
-    # graph['conv3_4'] = self.conv_layer(graph['relu3_3'], W=self.get_weights(self.vgg_layers, 16))
-    # graph['relu3_4'] = self.relu_layer(graph['conv3_4'], b=self.get_bias(self.vgg_layers, 16))
-
-    # graph['pool3']   = self.pool_layer(graph['relu3_4'])
-
-    # print('LAYER GROUP 4')
-    # graph['conv4_1'] = self.conv_layer(graph['pool3'], W=self.get_weights(self.vgg_layers, 19))
-    # graph['relu4_1'] = self.relu_layer(graph['conv4_1'], b=self.get_bias(self.vgg_layers, 19))
-
-    # graph['conv4_2'] = self.conv_layer(graph['relu4_1'], W=self.get_weights(self.vgg_layers, 21))
-    # graph['relu4_2'] = self.relu_layer(graph['conv4_2'], b=self.get_bias(self.vgg_layers, 21))
-
-    # graph['conv4_3'] = self.conv_layer(graph['relu4_2'], W=self.get_weights(self.vgg_layers, 23))
-    # graph['relu4_3'] = self.relu_layer(graph['conv4_3'], b=self.get_bias(self.vgg_layers, 23))
-
-    # graph['conv4_4'] = self.conv_layer(graph['relu4_3'], W=self.get_weights(self.vgg_layers, 25))
-    # graph['relu4_4'] = self.relu_layer(graph['conv4_4'], b=self.get_bias(self.vgg_layers, 25))
-
-    # graph['pool4']   = self.pool_layer(graph['relu4_4'])
-
-    # print('LAYER GROUP 5')
-    # graph['conv5_1'] = self.conv_layer(graph['pool4'], W=self.get_weights(self.vgg_layers, 28))
-    # graph['relu5_1'] = self.relu_layer(graph['conv5_1'], b=self.get_bias(self.vgg_layers, 28))
-
-    # graph['conv5_2'] = self.conv_layer(graph['relu5_1'], W=self.get_weights(self.vgg_layers, 30))
-    # graph['relu5_2'] = self.relu_layer(graph['conv5_2'], b=self.get_bias(self.vgg_layers, 30))
-
-    # graph['conv5_3'] = self.conv_layer(graph['relu5_2'], W=self.get_weights(self.vgg_layers, 32))
-    # graph['relu5_3'] = self.relu_layer(graph['conv5_3'], b=self.get_bias(self.vgg_layers, 32))
-
-    # graph['conv5_4'] = self.conv_layer(graph['relu5_3'], W=self.get_weights(self.vgg_layers, 34))
-    # graph['relu5_4'] = self.relu_layer(graph['conv5_4'], b=self.get_bias(self.vgg_layers, 34))
-
-    # graph['pool5']   = self.pool_layer(graph['relu5_4'])
-
     graph['conv1_1'] = self.conv_layer(graph['input'], 0)
     graph['conv1_2'] = self.conv_layer(graph['conv1_1'], 2)
     graph['pool1']   = self.pool_layer(graph['conv1_2'])
@@ -117,10 +53,6 @@ class VGG19:
     bias = self.get_bias(self.vgg_layers, layer_num)
     conv_relu = tf.nn.relu(conv + bias)
     return conv_relu
-
-  # def relu_layer(self, layer_input, b):
-  #   relu = tf.nn.relu(layer_input + b)
-  #   return relu
 
   def pool_layer(self, layer_input):
     pool = tf.nn.avg_pool(layer_input, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
