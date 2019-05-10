@@ -84,31 +84,26 @@ class VGG19:
 
     # graph['pool5']   = self.pool_layer(graph['relu5_4'])
 
-    print('LAYER GROUP 1')
     graph['conv1_1'] = self.conv_layer(graph['input'], 0)
     graph['conv1_2'] = self.conv_layer(graph['conv1_1'], 2)
     graph['pool1']   = self.pool_layer(graph['conv1_2'])
 
-    print('LAYER GROUP 2')  
     graph['conv2_1'] = self.conv_layer(graph['pool1'], 5)
     graph['conv2_2'] = self.conv_layer(graph['conv2_1'], 7)
-    graph['pool2']   = self.pool_layer(graph['relu2_2'])
+    graph['pool2']   = self.pool_layer(graph['conv2_2'])
     
-    print('LAYER GROUP 3')
     graph['conv3_1'] = self.conv_layer(graph['pool2'], 10)
     graph['conv3_2'] = self.conv_layer(graph['conv3_1'], 12)
     graph['conv3_3'] = self.conv_layer(graph['conv3_2'], 14)
     graph['conv3_4'] = self.conv_layer(graph['conv3_3'], 16)
     graph['pool3']   = self.pool_layer(graph['conv3_4'])
 
-    print('LAYER GROUP 4')
     graph['conv4_1'] = self.conv_layer(graph['pool3'], 19)
     graph['conv4_2'] = self.conv_layer(graph['conv4_1'], 21)
     graph['conv4_3'] = self.conv_layer(graph['conv4_2'], 23)
     graph['conv4_4'] = self.conv_layer(graph['conv4_3'], 25)
     graph['pool4']   = self.pool_layer(graph['conv4_4'])
 
-    print('LAYER GROUP 5')
     graph['conv5_1'] = self.conv_layer(graph['pool4'], 28)
     graph['conv5_2'] = self.conv_layer(graph['conv5_1'], 30)
     graph['conv5_3'] = self.conv_layer(graph['conv5_2'], 32)
