@@ -4,7 +4,7 @@ cr=`echo $'\n.'`
 cr=${cr%.}
 
 if [ "$#" -le 1 ]; then
-   echo "Usage: bash stylize_image.sh <path_to_content_image> <path_to_style_image>"
+   echo "Usage: bash stylize.sh <path_to_content_image> <path_to_style_image>"
    exit 1
 fi
 
