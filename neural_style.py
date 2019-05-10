@@ -9,6 +9,8 @@ import cv2
 import os
 import vgg19
 
+from keras import backend as K
+
 # Weights + biases of VGG-19 network
 vgg_path = '../imagenet-vgg-verydeep-19.mat'
 # Weight for content loss
@@ -90,29 +92,38 @@ def parse_args():
   return args
 
 '''
-  'a neural algorithm for artistic style' loss functions
+  'a neural algorithm of artistic style' loss functions
+'''
+
+'''
+Gets the content loss between the original content image (p) and the 
+generated image (x), as described in the paper.
 '''
 def content_layer_loss(p, x):
-  _, h, w, d = p.get_shape()
-  M = h.value * w.value
-  N = d.value
-  K = 1. / (2. * N**0.5 * M**0.5)
-  loss = K * tf.reduce_sum(tf.pow((x - p), 2))
-  return loss
+  # _, h, w, d = p.get_shape()
+  # M = h.value * w.value
+  # N = d.value
+  # K = 1. / (2. * N**0.5 * M**0.5)
+  # loss = K * tf.reduce_sum(tf.pow((x - p), 2))
+  # return loss
+  return 0.5 * K.sum(K.square(x - p))
+
+def gram(x):
+  _, h, w, d = x.get_shape()
+  # resize to (area x depth), where area = h x w
+  F = K.reshape(x, (h.value * w.value, d.value))
+  G = K.dot(K.transpose(F), F)
+  return G
 
 def style_layer_loss(a, x):
   _, h, w, d = a.get_shape()
   M = h.value * w.value
   N = d.value
-  A = gram_matrix(a, M, N)
-  G = gram_matrix(x, M, N)
-  loss = (1./(4 * N**2 * M**2)) * tf.reduce_sum(tf.pow((G - A), 2))
-  return loss
-
-def gram_matrix(x, area, depth):
-  F = tf.reshape(x, (area, depth))
-  G = tf.matmul(tf.transpose(F), F)
-  return G
+  return K.sum(K.square(gram(a) - gram(x))) / (4 * N**2 * M**2)
+  # A = gram_matrix(a, M, N)
+  # G = gram_matrix(x, M, N)
+  # loss = (1./(4 * N**2 * M**2)) * tf.reduce_sum(tf.pow((G - A), 2))
+  # return loss
 
 def sum_style_losses(sess, net, style_imgs):
   total_style_loss = 0.

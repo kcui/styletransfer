@@ -59,6 +59,9 @@ class VGG19:
 
   def avg_pool(self, layer_input):
     return tf.nn.avg_pool(layer_input, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+
+  def max_pool(self, layer_input):
+    return tf.nn.max_pool(layer_input, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     
   def get_model(self):
     return self.model
