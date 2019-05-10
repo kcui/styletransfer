@@ -118,8 +118,8 @@ class VGG19:
 
   def conv_layer(self, layer_input, layer_num):
     weights = self.get_weights(self.vgg_layers, layer_num)
-    bias = self.get_bias(self.vgg_layers, layer_num)
     conv = tf.nn.conv2d(layer_input, weights, strides=[1, 1, 1, 1], padding='SAME')
+    bias = self.get_bias(self.vgg_layers, layer_num)
     conv_bias = tf.nn.bias_add(conv, bias)
     conv_relu = tf.nn.relu(conv)
     return conv_relu
