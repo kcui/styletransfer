@@ -38,33 +38,20 @@ prev_frame_indices = [1]
   parsing and configuration
 '''
 def parse_args():
-
-  desc = "TensorFlow implementation of 'A Neural Algorithm for Artistic Style'"
-  parser = argparse.ArgumentParser(description=desc)
+  parser = argparse.ArgumentParser()
 
   parser.add_argument('--style_img', type=str,
-    help='Filenames of the style image (example: starry-night.jpg)',
-    required=True)
-
+    help='filename of the style image', required=True)
   parser.add_argument('--content_img', type=str,
-    help='Filename of the content image (example: lion.jpg)')
-
+    help='filename of the content image')
   parser.add_argument('--max_size', type=int,
     default=512,
-    help='Maximum width or height of the input images. (default: %(default)s)')
-
-  parser.add_argument('--device', type=str,
-    default='/gpu:0',
-    choices=['/gpu:0', '/cpu:0'],
-    help='GPU or CPU mode.  GPU mode requires NVIDIA CUDA. (default|recommended: %(default)s)')
-
+    help='max dimension of the input image. default 512')
   parser.add_argument('--video', action='store_true',
-    help='Boolean flag indicating if the user is generating a video.')
-
+    help='flag for if video')
   parser.add_argument('--end_frame', type=int,
     default=1,
-    help='Last frame number.')
-
+    help='last frame of the video to render')
   parser.add_argument('--video_input_dir', type=str,
     default='./video_input',
     help='Relative or absolute directory path to input frames.')
@@ -78,10 +65,13 @@ def parse_args():
   content_layer_weights = normalize(content_layer_weights)
 
   # create directories for output
+  dir_path = None
   if args.video:
-    maybe_make_directory('./video_output')
+    dir_path = './video_output'
   else:
-    maybe_make_directory('./image_output')
+    dir_path = './image_output'
+  if not os.path.exists(dir_path):
+    os.makedirs(dir_path)
 
   return args
 
@@ -189,7 +179,6 @@ def sum_shortterm_temporal_losses(sess, net, frame, input_img):
 def read_image(path):
   # bgr image
   img = cv2.imread(path, cv2.IMREAD_COLOR)
-  check_image(img, path)
   img = img.astype(np.float32)
   img = preprocess(img)
   return img
@@ -251,19 +240,12 @@ def normalize(weights):
     return [float(i) / denom for i in weights]
   else: return [0.] * len(weights)
 
-def maybe_make_directory(dir_path):
-  if not os.path.exists(dir_path):
-    os.makedirs(dir_path)
-
-def check_image(img, path):
-  if img is None:
-    raise OSError(errno.ENOENT, "No such file", path)
 
 '''
   rendering -- where the magic happens
 '''
 def stylize(content_img, style_img, init_img, frame=None):
-  with tf.device(args.device), tf.Session() as sess:
+  with tf.device('/gpu:0'), tf.Session() as sess:
     # setup network
     vgg = vgg19.VGG19(content_img, vgg_path=vgg_path)
     net = vgg.get_model()
@@ -364,7 +346,6 @@ def get_content_image(content_img):
   path = os.path.join('./image_input', content_img)
    # bgr image
   img = cv2.imread(path, cv2.IMREAD_COLOR)
-  check_image(img, path)
   img = img.astype(np.float32)
   h, w, d = img.shape
   mx = args.max_size
@@ -383,7 +364,6 @@ def get_style_image(content_img):
   path = os.path.join('./styles', args.style_img)
   # bgr image
   img = cv2.imread(path, cv2.IMREAD_COLOR)
-  check_image(img, path)
   img = img.astype(np.float32)
   img = cv2.resize(img, dsize=(cw, ch), interpolation=cv2.INTER_AREA)
   img = preprocess(img)
@@ -391,13 +371,10 @@ def get_style_image(content_img):
 
 def get_prev_warped_frame(frame):
   prevframe = frame - 1
-
   # get path to previous frame
   imagepath = os.path.join('./video_output', 'frame_{}.ppm'.format(str(prevframe).zfill(4)))
-
   # read in previous image
   prev_image = cv2.imread(imagepath, cv2.IMREAD_COLOR)
-  
   path = os.path.join(args.video_input_dir, 'backward_{}_{}.flo'.format(str(frame), str(prevframe)))
   flow = read_flow_file(path)
 
