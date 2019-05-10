@@ -13,8 +13,6 @@ import vgg19
 vgg_path = '../imagenet-vgg-verydeep-19.mat'
 # Weight for content loss
 content_weight = 5e0
-# Interpolation weight of the style image(s)
-style_imgs_weights = [1.0]
 
 # Weight for style loss
 style_weight = 1e4
@@ -44,8 +42,8 @@ def parse_args():
   desc = "TensorFlow implementation of 'A Neural Algorithm for Artistic Style'"
   parser = argparse.ArgumentParser(description=desc)
 
-  parser.add_argument('--style_imgs', nargs='+', type=str,
-    help='Filenames of the style images (example: starry-night.jpg)',
+  parser.add_argument('--style_img', type=str,
+    help='Filenames of the style image (example: starry-night.jpg)',
     required=True)
 
   parser.add_argument('--content_img', type=str,
@@ -76,10 +74,8 @@ def parse_args():
   # normalize weights
   global style_layer_weights
   global content_layer_weights
-  global style_imgs_weights
   style_layer_weights   = normalize(style_layer_weights)
   content_layer_weights = normalize(content_layer_weights)
-  style_imgs_weights = normalize(style_imgs_weights)
 
   # create directories for output
   if args.video:
@@ -89,13 +85,12 @@ def parse_args():
 
   return args
 
-'''
-  'a neural algorithm of artistic style' loss functions
-'''
+
+# Loss functions from Gatys
 
 '''
-Gets the content loss between the original content image (p) and the 
-generated image (x), as described in the paper.
+Gets the content loss between the original content tensor (p) and the 
+generated tensor (x), as described in the paper.
 '''
 def content_layer_loss(p, x):
   _, h, w, d = p.get_shape()
@@ -103,6 +98,9 @@ def content_layer_loss(p, x):
   N = d.value
   return 1 / (2 * N**.5 * M**.5) * tf.reduce_sum(tf.square(x - p))
 
+'''
+Gets the Gram matrix for a given input matrix.
+'''
 def gram(x):
   _, h, w, d = x.get_shape()
   # resize to (area x depth), where area = h x w
@@ -110,27 +108,15 @@ def gram(x):
   G = tf.matmul(tf.transpose(F), F)
   return G
 
+'''
+Gets the style loss between the original content tensor (p) and the 
+generated tensor (x), as described in the paper.
+'''
 def style_layer_loss(a, x):
   _, h, w, d = a.get_shape()
   M = h.value * w.value
   N = d.value
   return tf.reduce_sum(tf.square(gram(a) - gram(x))) / (4 * N**2 * M**2)
-
-def sum_style_losses(sess, net, style_imgs):
-  total_style_loss = 0.
-  weights = style_imgs_weights
-  for img, img_weight in zip(style_imgs, weights):
-    sess.run(net['input'].assign(img))
-    style_loss = 0.
-    for layer, weight in zip(style_layers, style_layer_weights):
-      a = sess.run(net[layer])
-      x = net[layer]
-      a = tf.convert_to_tensor(a)
-      style_loss += style_layer_loss(a, x) * weight
-    style_loss /= float(len(style_layers))
-    total_style_loss += (style_loss * img_weight)
-  total_style_loss /= float(len(style_imgs))
-  return total_style_loss
 
 def sum_content_losses(sess, net, content_img):
   sess.run(net['input'].assign(content_img))
@@ -142,6 +128,23 @@ def sum_content_losses(sess, net, content_img):
     content_loss += content_layer_loss(p, x) * weight
   content_loss /= float(len(content_layers))
   return content_loss
+
+'''
+Gets the total style loss for each of the specified style 
+'''
+def sum_style_losses(sess, net, style_img):
+  # for img, img_weight in zip(style_imgs, weights):
+  sess.run(net['input'].assign(style_img))
+  style_loss = 0.
+  for layer, weight in zip(style_layers, style_layer_weights):
+    a = sess.run(net[layer])
+    x = net[layer]
+    a = tf.convert_to_tensor(a)
+    style_loss += style_layer_loss(a, x) * weight
+  style_loss /= float(len(style_layers))
+  # total_style_loss += (style_loss * img_weight)
+  # total_style_loss /= float(len(style_imgs))
+  return style_loss
 
 '''
   'artistic style transfer for videos' loss functions
@@ -259,14 +262,14 @@ def check_image(img, path):
 '''
   rendering -- where the magic happens
 '''
-def stylize(content_img, style_imgs, init_img, frame=None):
+def stylize(content_img, style_img, init_img, frame=None):
   with tf.device(args.device), tf.Session() as sess:
     # setup network
     vgg = vgg19.VGG19(content_img, vgg_path=vgg_path)
     net = vgg.get_model()
 
     # style loss
-    L_style = sum_style_losses(sess, net, style_imgs)
+    L_style = sum_style_losses(sess, net, style_img)
 
     # content loss
     L_content = sum_content_losses(sess, net, content_img)
@@ -301,7 +304,7 @@ def stylize(content_img, style_imgs, init_img, frame=None):
     if args.video:
       write_video_output(frame, output_img)
     else:
-      write_image_output(output_img, content_img, style_imgs, init_img)
+      write_image_output(output_img, content_img, style_img, init_img)
 
 def minimize_with_lbfgs(sess, net, optimizer, init_img):
   print('\nMINIMIZING LOSS USING: L-BFGS OPTIMIZER')
@@ -321,47 +324,30 @@ def write_video_output(frame, output_img):
   path = os.path.join('./video_output', fn)
   write_image(path, output_img)
 
-def write_image_output(output_img, content_img, style_imgs, init_img):
+def write_image_output(output_img, content_img, style_img, init_img):
   out_dir = os.path.join('./image_output', 'result')
   maybe_make_directory(out_dir)
-  img_path = os.path.join(out_dir, 'result'+'.png')
+  img_path = os.path.join(out_dir, 'result.png')
   content_path = os.path.join(out_dir, 'content.png')
   init_path = os.path.join(out_dir, 'init.png')
 
   write_image(img_path, output_img)
   write_image(content_path, content_img)
   write_image(init_path, init_img)
-  index = 0
-  for style_img in style_imgs:
-    path = os.path.join(out_dir, 'style_'+str(index)+'.png')
-    write_image(path, style_img)
-    index += 1
 
-  # save the configuration settings
-  out_file = os.path.join(out_dir, 'meta_data.txt')
-  f = open(out_file, 'w')
-  f.write('image_name: {}\n'.format('result'))
-  f.write('content: {}\n'.format(args.content_img))
-  index = 0
-  for style_img, weight in zip(args.style_imgs, style_imgs_weights):
-    f.write('styles['+str(index)+']: {} * {}\n'.format(weight, style_img))
-    index += 1
-  index = 0
+  style_path = os.path.join(out_dir, 'style.png')
+  write_image(style_path, style_img)
+  # index = 0
+  # for style_img in style_imgs:
+  #   path = os.path.join(out_dir, 'style_'+str(index)+'.png')
+  #   write_image(path, style_img)
+  #   index += 1
 
-  f.write('init_type: {}\n'.format('content'))
-  f.write('content_weight: {}\n'.format(content_weight))
-  f.write('style_weight: {}\n'.format(style_weight))
-  f.write('tv_weight: {}\n'.format(total_variational_loss_weight))
-  f.write('content_layers: {}\n'.format(content_layers))
-  f.write('style_layers: {}\n'.format(style_layers))
-  f.write('max_iterations: {}\n'.format(max_iterations))
-  f.write('max_image_size: {}\n'.format(args.max_size))
-  f.close()
 
 '''
   image loading and processing
 '''
-def get_init_image(init_type, content_img, style_imgs, frame=None):
+def get_init_image(init_type, content_img, style_img, frame=None):
   if init_type == 'content':
     return content_img
   elif init_type == 'prev_warped':
@@ -392,19 +378,16 @@ def get_content_image(content_img):
   img = preprocess(img)
   return img
 
-def get_style_images(content_img):
+def get_style_image(content_img):
   _, ch, cw, cd = content_img.shape
-  style_imgs = []
-  for style_fn in args.style_imgs:
-    path = os.path.join('./styles', style_fn)
-    # bgr image
-    img = cv2.imread(path, cv2.IMREAD_COLOR)
-    check_image(img, path)
-    img = img.astype(np.float32)
-    img = cv2.resize(img, dsize=(cw, ch), interpolation=cv2.INTER_AREA)
-    img = preprocess(img)
-    style_imgs.append(img)
-  return style_imgs
+  path = os.path.join('./styles', args.style_img)
+  # bgr image
+  img = cv2.imread(path, cv2.IMREAD_COLOR)
+  check_image(img, path)
+  img = img.astype(np.float32)
+  img = cv2.resize(img, dsize=(cw, ch), interpolation=cv2.INTER_AREA)
+  img = preprocess(img)
+  return img
 
 def get_prev_warped_frame(frame):
   prevframe = frame - 1
@@ -450,13 +433,11 @@ def warp_image(src, flow):
 
 def render_single_image():
   content_img = get_content_image(args.content_img)
-  style_imgs = get_style_images(content_img)
+  style_img = get_style_image(content_img)
   with tf.Graph().as_default():
-    print('\n---- RENDERING SINGLE IMAGE ----\n')
-    # first image type is 'content' by default)
-    init_img = get_init_image('content', content_img, style_imgs)
+    init_img = get_init_image('content', content_img, style_img)
     tick = time.time()
-    stylize(content_img, style_imgs, init_img)
+    stylize(content_img, style_img, init_img)
     tock = time.time()
     print('Single image elapsed time: {}'.format(tock - tick))
 
@@ -466,24 +447,24 @@ def render_video():
       print('\n---- RENDERING VIDEO FRAME: {}/{} ----\n'.format(frame, args.end_frame))
       if frame == 1:
         content_frame = get_content_frame(frame)
-        style_imgs = get_style_images(content_frame)
+        style_img = get_style_image(content_frame)
         # first frame type is 'content' by default
-        init_img = get_init_image('content', content_frame, style_imgs, frame)
+        init_img = get_init_image('content', content_frame, style_img, frame)
         # Default max number of optimizer iterations of the first frame
         max_iterations = 2000
         tick = time.time()
-        stylize(content_frame, style_imgs, init_img, frame)
+        stylize(content_frame, style_img, init_img, frame)
         tock = time.time()
         print('Frame {} elapsed time: {}'.format(frame, tock - tick))
       else:
         content_frame = get_content_frame(frame)
-        style_imgs = get_style_images(content_frame)
+        style_img = get_style_image(content_frame)
         # initial frame type is 'prev_warped' by default
-        init_img = get_init_image('prev_warped', content_frame, style_imgs, frame)
+        init_img = get_init_image('prev_warped', content_frame, style_img, frame)
         # Default max number of optimizer iterations of the frames after first
         max_iterations = 800
         tick = time.time()
-        stylize(content_frame, style_imgs, init_img, frame)
+        stylize(content_frame, style_img, init_img, frame)
         tock = time.time()
         print('Frame {} elapsed time: {}'.format(frame, tock - tick))
 

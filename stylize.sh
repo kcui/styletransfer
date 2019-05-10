@@ -9,7 +9,7 @@ if [ "$#" -le 1 ]; then
 fi
 
 echo ""
-read -p "Rendering video? [y/n] $cr > " video
+read -p "Rendering video? [y/n] " video
 
 if [ "$video" == "y" ]; then
   FFMPEG=ffmpeg
@@ -83,6 +83,6 @@ else
   echo "Rendering stylized image. This may take a while..."
   python neural_style.py \
   --content_img "${content_filename}" \
-  --style_imgs "${style_filename}" \
+  --style_img "${style_filename}" \
   --device "/gpu:0";
 fi
