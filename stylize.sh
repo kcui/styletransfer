@@ -83,6 +83,5 @@ else
   echo "Rendering stylized image. This may take a while..."
   python neural_style.py \
   --content_img "${content_filename}" \
-  --style_img "${style_filename}" \
-  --device "/gpu:0";
+  --style_img "${style_filename}" 
 fi
