@@ -113,7 +113,7 @@ Gets the summed losses (style or content) of the layers
 '''
 
 def sum_losses(sess, net, img, loss_type):
-  sess.run(net['input'].assign(content_img))
+  sess.run(net['input'].assign(img))
   loss = 0.
   layers = None
   layer_weights = None
