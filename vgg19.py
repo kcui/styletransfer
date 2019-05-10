@@ -48,9 +48,12 @@ class VGG19:
     return graph
 
   def conv_layer(self, layer_input, i):
+    # get weight and construct conv layer
     weights = tf.constant(self.layers[i][0][0][2][0][0])
     conv = tf.nn.conv2d(layer_input, weights, strides=[1, 1, 1, 1], padding='SAME')
-    bias = tf.constant(self.layers[i][0][0][2][0][1])
+    # bias, then relu
+    bias = self.layers[i][0][0][2][0][1]
+    bias = tf.constant(np.reshape(bias, (bias.size)))
     conv_relu = tf.nn.relu(conv + bias)
     return conv_relu
 
