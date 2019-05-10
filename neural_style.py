@@ -419,9 +419,7 @@ def get_prev_warped_frame(frame):
   prevframe = frame - 1
 
   # get path to previous frame
-  imagepath = os.path.join(
-    './video_output', '
-    ''frame_{}.ppm'.format(str(prevframe).zfill(4)))
+  imagepath = os.path.join('./video_output', 'frame_{}.ppm'.format(str(prevframe).zfill(4)))
 
   # read in previous image
   prev_image = cv2.imread(path, cv2.IMREAD_COLOR)
