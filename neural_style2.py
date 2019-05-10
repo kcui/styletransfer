@@ -1,10 +1,10 @@
 import tensorflow as tf
-import numpy as np 
-import scipy.io  
-import argparse 
+import numpy as np
+import scipy.io
+import argparse
 import struct
 import errno
-import time                       
+import time
 import cv2
 import os
 
@@ -27,7 +27,7 @@ content_layers = ['block4_conv2']
 # Contribution of each content layer to loss
 content_layer_weights = [1.0]
 # VGG19 layers to be used for style image
-style_layers = ['block1_conv1', 'block1_conv2', 'block3_conv1', 'block4_conv1', 'block5_conv1']
+style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
 # Contribution of each style layer to loss
 style_layer_weights = [0.2, 0.2, 0.2, 0.2, 0.2]
 # Max num iterations for L-BFGS optimizer
@@ -44,33 +44,33 @@ prev_frame_indices = [1]
 '''
 def parse_args():
 
-  desc = "TensorFlow implementation of 'A Neural Algorithm for Artistic Style'"  
+  desc = "TensorFlow implementation of 'A Neural Algorithm for Artistic Style'"
   parser = argparse.ArgumentParser(description=desc)
 
   parser.add_argument('--style_imgs', nargs='+', type=str,
-    help='Filenames of the style images (example: starry-night.jpg)', 
+    help='Filenames of the style images (example: starry-night.jpg)',
     required=True)
 
   parser.add_argument('--content_img', type=str,
     help='Filename of the content image (example: lion.jpg)')
 
-  parser.add_argument('--max_size', type=int, 
+  parser.add_argument('--max_size', type=int,
     default=512,
     help='Maximum width or height of the input images. (default: %(default)s)')
-  
-  parser.add_argument('--device', type=str, 
+
+  parser.add_argument('--device', type=str,
     default='/gpu:0',
     choices=['/gpu:0', '/cpu:0'],
     help='GPU or CPU mode.  GPU mode requires NVIDIA CUDA. (default|recommended: %(default)s)')
 
-  parser.add_argument('--video', action='store_true', 
+  parser.add_argument('--video', action='store_true',
     help='Boolean flag indicating if the user is generating a video.')
-  
-  parser.add_argument('--end_frame', type=int, 
+
+  parser.add_argument('--end_frame', type=int,
     default=1,
     help='Last frame number.')
-  
-  parser.add_argument('--video_input_dir', type=str, 
+
+  parser.add_argument('--video_input_dir', type=str,
     default='./video_input',
     help='Relative or absolute directory path to input frames.')
 
@@ -258,9 +258,9 @@ def read_flow_file(path):
   with open(path, 'rb') as f:
     # 4 bytes header
     header = struct.unpack('4s', f.read(4))[0]
-    # 4 bytes width, height    
+    # 4 bytes width, height
     w = struct.unpack('i', f.read(4))[0]
-    h = struct.unpack('i', f.read(4))[0]   
+    h = struct.unpack('i', f.read(4))[0]
     flow = np.ndarray((2, h, w), dtype=np.float32)
     for y in range(h):
       for x in range(w):
@@ -289,7 +289,7 @@ def normalize(weights):
   else: return [0.] * len(weights)
 
 def maybe_make_directory(dir_path):
-  if not os.path.exists(dir_path):  
+  if not os.path.exists(dir_path):
     os.makedirs(dir_path)
 
 def check_image(img, path):
@@ -303,26 +303,26 @@ def stylize(content_img, style_imgs, init_img, frame=None):
   with tf.device(args.device), tf.Session() as sess:
     # setup network
     net = build_model(content_img)
-    
+
     # style loss
     L_style = sum_style_losses(sess, net, style_imgs)
-    
+
     # content loss
     L_content = sum_content_losses(sess, net, content_img)
-    
+
     # denoising loss
     L_tv = tf.image.total_variation(net['input_1'])
-    
+
     # loss weights
     alpha = content_weight
     beta  = style_weight
     theta = total_variational_loss_weight
-    
+
     # total loss
     L_total  = alpha * L_content
     L_total += beta  * L_style
     L_total += theta * L_tv
-    
+
     # video temporal loss
     if args.video and frame > 1:
       gamma      = temporal_weight
@@ -332,10 +332,11 @@ def stylize(content_img, style_imgs, init_img, frame=None):
     # optimization algorithm
     optimizer = get_optimizer(L_total)
 
-    minimize_with_lbfgs(sess, net, optimizer, init_img)
-    
+    # minimize_with_lbfgs(sess, net, optimizer, init_img)
+    minimize_with_adam(sess, net, optimizer, init_img, L_total)
+
     output_img = sess.run(net['input_1'])
-    
+
 
     if args.video:
       write_video_output(frame, output_img)
@@ -349,10 +350,25 @@ def minimize_with_lbfgs(sess, net, optimizer, init_img):
   sess.run(net['input_1'].assign(init_img))
   optimizer.minimize(sess)
 
+def minimize_with_adam(sess, net, optimizer, init_img, loss):
+  if args.verbose: print('\nMINIMIZING LOSS USING: ADAM OPTIMIZER')
+  train_op = optimizer.minimize(loss)
+  init_op = tf.global_variables_initializer()
+  sess.run(init_op)
+  sess.run(net['input'].assign(init_img))
+  iterations = 0
+  while (iterations < args.max_iterations):
+    sess.run(train_op)
+    if iterations % args.print_iterations == 0 and args.verbose:
+      curr_loss = loss.eval()
+      print("At iterate {}\tf=  {}".format(iterations, curr_loss))
+    iterations += 1
+
 def get_optimizer(loss):
 
-  optimizer = tf.contrib.opt.ScipyOptimizerInterface(loss, method='L-BFGS-B', 
-    options={'maxiter': max_iterations, 'disp': 50}) #50 print iterations
+  # optimizer = tf.contrib.opt.ScipyOptimizerInterface(loss, method='L-BFGS-B',
+  #   options={'maxiter': max_iterations, 'disp': 50}) #50 print iterations
+  optimizer = tf.train.AdamOptimizer(1e0)
   return optimizer
 
 def write_video_output(frame, output_img):
@@ -375,7 +391,7 @@ def write_image_output(output_img, content_img, style_imgs, init_img):
     path = os.path.join(out_dir, 'style_'+str(index)+'.png')
     write_image(path, style_img)
     index += 1
-  
+
   # save the configuration settings
   out_file = os.path.join(out_dir, 'meta_data.txt')
   f = open(out_file, 'w')
@@ -485,7 +501,7 @@ def warp_image(src, flow):
     flow_map[0,:,x] = float(x) + flow[0,:,x]
   # remap pixels to optical flow
   dst = cv2.remap(
-    src, flow_map[0], flow_map[1], 
+    src, flow_map[0], flow_map[1],
     interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_TRANSPARENT)
   return dst
 
@@ -534,7 +550,7 @@ def render_video():
         style_imgs = get_style_images(content_frame)
         # first frame type is 'content' by default
         init_img = get_init_image('content', content_frame, style_imgs, frame)
-        # Default max number of optimizer iterations of the first frame 
+        # Default max number of optimizer iterations of the first frame
         max_iterations = 2000
         tick = time.time()
         stylize(content_frame, style_imgs, init_img, frame)
@@ -543,7 +559,7 @@ def render_video():
       else:
         content_frame = get_content_frame(frame)
         style_imgs = get_style_images(content_frame)
-        # initial frame type is 'prev_warped' by default  
+        # initial frame type is 'prev_warped' by default
         init_img = get_init_image('prev_warped', content_frame, style_imgs, frame)
         # Default max number of optimizer iterations of the frames after first
         max_iterations = 800
