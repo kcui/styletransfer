@@ -1,5 +1,5 @@
 
-# https://github.com/cysmith/neural-style-tf/blob/master/neural_style.pyimport numpy as np
+# # https://github.com/cysmith/neural-style-tf/blob/master/neural_style.pyimport numpy as np
 
 import os
 import matplotlib.pyplot as plt
@@ -41,171 +41,172 @@ style_layers = ['block1_conv1',
 num_content_layers = len(content_layers)
 num_style_layers = len(style_layers)
 
-def load_image(path):
-  img = Image.open(path)
-  # downscale image
-  dim = 512
-  scale = dim/max(img.size)
-  img = img.resize((round(img.size[0]*scale), round(img.size[1]*scale)), Image.ANTIALIAS)
-  img = preprocessing.image.img_to_array(img)
-  img = np.expand_dims(img, axis=0)
-  return img
+# def load_image(path):
+#   img = Image.open(path)
+#   # downscale image
+#   dim = 512
+#   scale = dim/max(img.size)
+#   img = img.resize((round(img.size[0]*scale), round(img.size[1]*scale)), Image.ANTIALIAS)
+#   img = preprocessing.image.img_to_array(img)
+#   img = np.expand_dims(img, axis=0)
+#   return img
 
-# preprocess according to VGG19
-def load_and_process_img(path_to_img):
-  img = load_image(path_to_img)
-  img = tf.keras.applications.vgg19.preprocess_input(img)
-  return img
+# # preprocess according to VGG19
+# def load_and_process_img(path_to_img):
+#   img = load_image(path_to_img)
+#   img = tf.keras.applications.vgg19.preprocess_input(img)
+#   return img
 
-def deprocess_img(processed_img):
-  x = processed_img.copy()
-  if len(x.shape) == 4:
-    x = np.squeeze(x, 0)
+# def deprocess_img(processed_img):
+#   x = processed_img.copy()
+#   if len(x.shape) == 4:
+#     x = np.squeeze(x, 0)
   
-  # perform the inverse of the preprocessiing step
-  x[:, :, 0] += 103.939
-  x[:, :, 1] += 116.779
-  x[:, :, 2] += 123.68
-  x = x[:, :, ::-1]
+#   # perform the inverse of the preprocessiing step
+#   x[:, :, 0] += 103.939
+#   x[:, :, 1] += 116.779
+#   x[:, :, 2] += 123.68
+#   x = x[:, :, ::-1]
 
-  x = np.clip(x, 0, 255).astype('uint8')
-  return x
+#   x = np.clip(x, 0, 255).astype('uint8')
+#   return x
 
-def imshow(img, title=None):
-  out = np.squeeze(img, axis=0)
-  out = out.astype('uint8')
-  plt.imshow(out)
-  if title is not None:
-    plt.title(title)
-  plt.imshow(out)
+# def imshow(img, title=None):
+#   out = np.squeeze(img, axis=0)
+#   out = out.astype('uint8')
+#   plt.imshow(out)
+#   if title is not None:
+#     plt.title(title)
+#   plt.imshow(out)
 
-def get_model():
-  """ Creates our model with access to intermediate layers. 
+# def get_model():
+#   """ Creates our model with access to intermediate layers. 
   
-  This function will load the VGG19 model and access the intermediate layers. 
-  These layers will then be used to create a new model that will take input image
-  and return the outputs from these intermediate layers from the VGG model. 
+#   This function will load the VGG19 model and access the intermediate layers. 
+#   These layers will then be used to create a new model that will take input image
+#   and return the outputs from these intermediate layers from the VGG model. 
   
-  Returns:
-    returns a keras model that takes image inputs and outputs the style and 
-      content intermediate layers. 
-  """
-  # Load our model. We load pretrained VGG, trained on imagenet data
-  vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
-  vgg.trainable = False
-  # Get output layers corresponding to style and content layers 
-  style_outputs = [vgg.get_layer(name).output for name in style_layers]
-  content_outputs = [vgg.get_layer(name).output for name in content_layers]
-  model_outputs = style_outputs + content_outputs
-  # Build model 
-  return models.Model(vgg.input, model_outputs)
+#   Returns:
+#     returns a keras model that takes image inputs and outputs the style and 
+#       content intermediate layers. 
+#   """
+#   # Load our model. We load pretrained VGG, trained on imagenet data
+#   vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
+#   print(vgg.layers)
+#   vgg.trainable = False
+#   # Get output layers corresponding to style and content layers 
+#   style_outputs = [vgg.get_layer(name).output for name in style_layers]
+#   content_outputs = [vgg.get_layer(name).output for name in content_layers]
+#   model_outputs = style_outputs + content_outputs
+#   # Build model 
+#   return models.Model(vgg.input, model_outputs)
 
-def get_content_loss(base_content, target):
-  return tf.reduce_mean(tf.square(base_content - target))
+# def get_content_loss(base_content, target):
+#   return tf.reduce_mean(tf.square(base_content - target))
 
-def gram_matrix(input_tensor):
-  # We make the image channels first 
-  channels = int(input_tensor.shape[-1])
-  a = tf.reshape(input_tensor, [-1, channels])
-  n = tf.shape(a)[0]
-  gram = tf.matmul(a, a, transpose_a=True)
-  return gram / tf.cast(n, tf.float32)
+# def gram_matrix(input_tensor):
+#   # We make the image channels first 
+#   channels = int(input_tensor.shape[-1])
+#   a = tf.reshape(input_tensor, [-1, channels])
+#   n = tf.shape(a)[0]
+#   gram = tf.matmul(a, a, transpose_a=True)
+#   return gram / tf.cast(n, tf.float32)
 
-def get_style_loss(base_style, gram_target):
-  """Expects two images of dimension h, w, c"""
-  # height, width, num filters of each layer
-  # We scale the loss at a given layer by the size of the feature map and the number of filters
-  height, width, channels = base_style.get_shape().as_list()
-  gram_style = gram_matrix(base_style)
+# def get_style_loss(base_style, gram_target):
+#   """Expects two images of dimension h, w, c"""
+#   # height, width, num filters of each layer
+#   # We scale the loss at a given layer by the size of the feature map and the number of filters
+#   height, width, channels = base_style.get_shape().as_list()
+#   gram_style = gram_matrix(base_style)
   
-  return tf.reduce_mean(tf.square(gram_style - gram_target))# / (4. * (channels ** 2) * (width * height) ** 2)
+#   return tf.reduce_mean(tf.square(gram_style - gram_target))# / (4. * (channels ** 2) * (width * height) ** 2)
 
-def get_feature_representations(model, content_path, style_path):
-  """Helper function to compute our content and style feature representations.
+# def get_feature_representations(model, content_path, style_path):
+#   """Helper function to compute our content and style feature representations.
 
-  This function will simply load and preprocess both the content and style 
-  images from their path. Then it will feed them through the network to obtain
-  the outputs of the intermediate layers. 
+#   This function will simply load and preprocess both the content and style 
+#   images from their path. Then it will feed them through the network to obtain
+#   the outputs of the intermediate layers. 
   
-  Arguments:
-    model: The model that we are using.
-    content_path: The path to the content image.
-    style_path: The path to the style image
+#   Arguments:
+#     model: The model that we are using.
+#     content_path: The path to the content image.
+#     style_path: The path to the style image
     
-  Returns:
-    returns the style features and the content features. 
-  """
-  # Load our images in 
-  content_image = load_and_process_img(content_path)
-  style_image = load_and_process_img(style_path)
+#   Returns:
+#     returns the style features and the content features. 
+#   """
+#   # Load our images in 
+#   content_image = load_and_process_img(content_path)
+#   style_image = load_and_process_img(style_path)
   
-  # batch compute content and style features
-  style_outputs = model(style_image)
-  content_outputs = model(content_image)
+#   # batch compute content and style features
+#   style_outputs = model(style_image)
+#   content_outputs = model(content_image)
   
   
-  # Get the style and content feature representations from our model  
-  style_features = [style_layer[0] for style_layer in style_outputs[:num_style_layers]]
-  content_features = [content_layer[0] for content_layer in content_outputs[num_style_layers:]]
-  return style_features, content_features
+#   # Get the style and content feature representations from our model  
+#   style_features = [style_layer[0] for style_layer in style_outputs[:num_style_layers]]
+#   content_features = [content_layer[0] for content_layer in content_outputs[num_style_layers:]]
+#   return style_features, content_features
 
-def compute_loss(model, loss_weights, init_image, gram_style_features, content_features):
-  """This function will compute the loss total loss.
+# def compute_loss(model, loss_weights, init_image, gram_style_features, content_features):
+#   """This function will compute the loss total loss.
   
-  Arguments:
-    model: The model that will give us access to the intermediate layers
-    loss_weights: The weights of each contribution of each loss function. 
-      (style weight, content weight, and total variation weight)
-    init_image: Our initial base image. This image is what we are updating with 
-      our optimization process. We apply the gradients wrt the loss we are 
-      calculating to this image.
-    gram_style_features: Precomputed gram matrices corresponding to the 
-      defined style layers of interest.
-    content_features: Precomputed outputs from defined content layers of 
-      interest.
+#   Arguments:
+#     model: The model that will give us access to the intermediate layers
+#     loss_weights: The weights of each contribution of each loss function. 
+#       (style weight, content weight, and total variation weight)
+#     init_image: Our initial base image. This image is what we are updating with 
+#       our optimization process. We apply the gradients wrt the loss we are 
+#       calculating to this image.
+#     gram_style_features: Precomputed gram matrices corresponding to the 
+#       defined style layers of interest.
+#     content_features: Precomputed outputs from defined content layers of 
+#       interest.
       
-  Returns:
-    returns the total loss, style loss, content loss, and total variational loss
-  """
-  style_weight, content_weight = loss_weights
+#   Returns:
+#     returns the total loss, style loss, content loss, and total variational loss
+#   """
+#   style_weight, content_weight = loss_weights
   
-  # Feed our init image through our model. This will give us the content and 
-  # style representations at our desired layers. Since we're using eager
-  # our model is callable just like any other function!
-  model_outputs = model(init_image)
+#   # Feed our init image through our model. This will give us the content and 
+#   # style representations at our desired layers. Since we're using eager
+#   # our model is callable just like any other function!
+#   model_outputs = model(init_image)
   
-  style_output_features = model_outputs[:num_style_layers]
-  content_output_features = model_outputs[num_style_layers:]
+#   style_output_features = model_outputs[:num_style_layers]
+#   content_output_features = model_outputs[num_style_layers:]
   
-  style_score = 0
-  content_score = 0
+#   style_score = 0
+#   content_score = 0
 
-  # Accumulate style losses from all layers
-  # Here, we equally weight each contribution of each loss layer
-  weight_per_style_layer = 1.0 / float(num_style_layers)
-  for target_style, comb_style in zip(gram_style_features, style_output_features):
-    style_score += weight_per_style_layer * get_style_loss(comb_style[0], target_style)
+#   # Accumulate style losses from all layers
+#   # Here, we equally weight each contribution of each loss layer
+#   weight_per_style_layer = 1.0 / float(num_style_layers)
+#   for target_style, comb_style in zip(gram_style_features, style_output_features):
+#     style_score += weight_per_style_layer * get_style_loss(comb_style[0], target_style)
     
-  # Accumulate content losses from all layers 
-  weight_per_content_layer = 1.0 / float(num_content_layers)
-  for target_content, comb_content in zip(content_features, content_output_features):
-    content_score += weight_per_content_layer* get_content_loss(comb_content[0], target_content)
+#   # Accumulate content losses from all layers 
+#   weight_per_content_layer = 1.0 / float(num_content_layers)
+#   for target_content, comb_content in zip(content_features, content_output_features):
+#     content_score += weight_per_content_layer* get_content_loss(comb_content[0], target_content)
   
-  style_score *= style_weight
-  content_score *= content_weight
+#   style_score *= style_weight
+#   content_score *= content_weight
 
-  # Get total loss
-  loss = style_score + content_score 
-  return loss, style_score, content_score
+#   # Get total loss
+#   loss = style_score + content_score 
+#   return loss, style_score, content_score
 
-def compute_grads(cfg):
-  with tf.GradientTape() as tape: 
-    all_loss = compute_loss(**cfg)
-  # Compute gradients wrt input image
-  total_loss = all_loss[0]
-  return tape.gradient(total_loss, cfg['init_image']), all_loss
+# def compute_grads(cfg):
+#   with tf.GradientTape() as tape: 
+#     all_loss = compute_loss(**cfg)
+#   # Compute gradients wrt input image
+#   total_loss = all_loss[0]
+#   return tape.gradient(total_loss, cfg['init_image']), all_loss
 
-import IPython.display
+# import IPython.display
 
 def run_style_transfer(content_path, 
                        style_path,
@@ -243,78 +244,137 @@ def run_style_transfer(content_path,
       'gram_style_features': gram_style_features,
       'content_features': content_features
   }
+  print(model.summary())
     
-  # For displaying
-  num_rows = 2
-  num_cols = 5
-  display_interval = num_iterations/(num_rows*num_cols)
-  start_time = time.time()
-  global_start = time.time()
+#   # For displaying
+#   num_rows = 2
+#   num_cols = 5
+#   display_interval = num_iterations/(num_rows*num_cols)
+#   start_time = time.time()
+#   global_start = time.time()
   
-  norm_means = np.array([103.939, 116.779, 123.68])
-  min_vals = -norm_means
-  max_vals = 255 - norm_means   
+#   norm_means = np.array([103.939, 116.779, 123.68])
+#   min_vals = -norm_means
+#   max_vals = 255 - norm_means   
   
-  imgs = []
-  for i in range(num_iterations):
-    grads, all_loss = compute_grads(cfg)
-    loss, style_score, content_score = all_loss
-    opt.apply_gradients([(grads, init_image)])
-    clipped = tf.clip_by_value(init_image, min_vals, max_vals)
-    init_image.assign(clipped)
-    end_time = time.time() 
+#   imgs = []
+#   for i in range(num_iterations):
+#     grads, all_loss = compute_grads(cfg)
+#     loss, style_score, content_score = all_loss
+#     opt.apply_gradients([(grads, init_image)])
+#     clipped = tf.clip_by_value(init_image, min_vals, max_vals)
+#     init_image.assign(clipped)
+#     end_time = time.time() 
     
-    if loss < best_loss:
-      # Update best loss and best image from total loss. 
-      best_loss = loss
-      best_img = deprocess_img(init_image.numpy())
+#     if loss < best_loss:
+#       # Update best loss and best image from total loss. 
+#       best_loss = loss
+#       best_img = deprocess_img(init_image.numpy())
 
-    if i % display_interval== 0:
-      start_time = time.time()
+#     if i % display_interval== 0:
+#       start_time = time.time()
       
-      # Use the .numpy() method to get the concrete numpy array
-      plot_img = init_image.numpy()
-      plot_img = deprocess_img(plot_img)
-      imgs.append(plot_img)
-      IPython.display.clear_output(wait=True)
-      IPython.display.display_png(Image.fromarray(plot_img))
-      print('Iteration: {}'.format(i))        
-      print('Total loss: {:.4e}, ' 
-            'style loss: {:.4e}, '
-            'content loss: {:.4e}, '
-            'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
-  print('Total time: {:.4f}s'.format(time.time() - global_start))
-  IPython.display.clear_output(wait=True)
-  plt.figure(figsize=(14,4))
-  for i,img in enumerate(imgs):
-      plt.subplot(num_rows,num_cols,i+1)
-      plt.imshow(img)
-      plt.xticks([])
-      plt.yticks([])
+#       # Use the .numpy() method to get the concrete numpy array
+#       plot_img = init_image.numpy()
+#       plot_img = deprocess_img(plot_img)
+#       imgs.append(plot_img)
+#       IPython.display.clear_output(wait=True)
+#       IPython.display.display_png(Image.fromarray(plot_img))
+#       print('Iteration: {}'.format(i))        
+#       print('Total loss: {:.4e}, ' 
+#             'style loss: {:.4e}, '
+#             'content loss: {:.4e}, '
+#             'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
+#   print('Total time: {:.4f}s'.format(time.time() - global_start))
+#   IPython.display.clear_output(wait=True)
+#   plt.figure(figsize=(14,4))
+#   for i,img in enumerate(imgs):
+#       plt.subplot(num_rows,num_cols,i+1)
+#       plt.imshow(img)
+#       plt.xticks([])
+#       plt.yticks([])
       
-  return best_img, best_loss
+#   return best_img, best_loss
 
-def show_results(best_img, content_path, style_path, show_large_final=True):
-  plt.figure(figsize=(10, 5))
-  content = load_image(content_path) 
-  style = load_image(style_path)
+# def show_results(best_img, content_path, style_path, show_large_final=True):
+#   plt.figure(figsize=(10, 5))
+#   content = load_image(content_path) 
+#   style = load_image(style_path)
 
-  plt.subplot(1, 2, 1)
-  imshow(content, 'Content Image')
+#   plt.subplot(1, 2, 1)
+#   imshow(content, 'Content Image')
 
-  plt.subplot(1, 2, 2)
-  imshow(style, 'Style Image')
+#   plt.subplot(1, 2, 2)
+#   imshow(style, 'Style Image')
 
-  if show_large_final: 
-    plt.figure(figsize=(10, 10))
+#   if show_large_final: 
+#     plt.figure(figsize=(10, 10))
 
-    plt.imshow(best_img)
-    plt.title('Output Image')
-    plt.show()
+#     plt.imshow(best_img)
+#     plt.title('Output Image')
+#     plt.show()
 
+import cv2
+
+def preprocess(img):
+  imgpre = np.copy(img)
+  # bgr to rgb
+  imgpre = imgpre[...,::-1]
+  # shape (h, w, d) to (1, h, w, d)
+  imgpre = imgpre[np.newaxis,:,:,:]
+  imgpre -= np.array([123.68, 116.779, 103.939]).reshape((1,1,1,3))
+  return imgpre
+
+def get_content_image(content_img):
+  path = os.path.join('./', content_img)
+   # bgr image
+  img = cv2.imread(path, cv2.IMREAD_COLOR)
+  img = img.astype(np.float32)
+  h, w, d = img.shape
+  mx = 512
+  # resize if > max size
+  if h > w and h > mx:
+    w = (float(mx) / float(h)) * w
+    img = cv2.resize(img, dsize=(int(w), mx), interpolation=cv2.INTER_AREA)
+  if w > mx:
+    h = (float(mx) / float(w)) * h
+    img = cv2.resize(img, dsize=(mx, int(h)), interpolation=cv2.INTER_AREA)
+  img = preprocess(img)
+  return img
+
+
+def get_model(img):
+  """ Creates our model with access to intermediate layers. 
+  
+  This function will load the VGG19 model and access the intermediate layers. 
+  These layers will then be used to create a new model that will take input image
+  and return the outputs from these intermediate layers from the VGG model. 
+  
+  Returns:
+    returns a keras model that takes image inputs and outputs the style and 
+      content intermediate layers. 
+  """
+  _, h, w, d = img.shape
+  # Load our model. We load pretrained VGG, trained on imagenet data
+  vgg = tf.keras.applications.vgg19.VGG19(include_top=False, input_shape=(h,w,d), weights='imagenet')
+  vgg.trainable = False
+  # Get output layers corresponding to style and content layers 
+  style_outputs = [vgg.get_layer(name).output for name in style_layers]
+  content_outputs = [vgg.get_layer(name).output for name in content_layers]
+  model_outputs = style_outputs + content_outputs
+  # Build model 
+  return models.Model(vgg.input, model_outputs)
 
 content_path = '../img/content_scili.jpg'
 style_path = '../img/style_starrynight.jpg'
+
+content_img = get_content_image(content_path)
+_, h, w, d = content_img.shape
+print(h, w, d)
+
+model = tf.keras.applications.vgg19.VGG19(include_top=False, input_shape=(h,w,d), weights='imagenet')
+outputs_dict = dict([(layer.name, layer.output) for layer in model.layers])
+print(outputs_dict)
 
 best_scili, best_loss = run_style_transfer(content_path, style_path)
 
