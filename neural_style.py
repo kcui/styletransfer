@@ -101,9 +101,6 @@ def content_layer_loss(p, x):
   _, h, w, d = p.get_shape()
   M = h.value * w.value
   N = d.value
-  # K = 1. / (2. * N**0.5 * M**0.5)
-  # loss = K * tf.reduce_sum(tf.pow((x - p), 2))
-  # return loss
   return 1 / (2 * N**.5 * M**.5) * tf.reduce_sum(tf.square(x - p))
 
 def gram(x):
@@ -118,10 +115,6 @@ def style_layer_loss(a, x):
   M = h.value * w.value
   N = d.value
   return tf.reduce_sum(tf.square(gram(a) - gram(x))) / (4 * N**2 * M**2)
-  # A = gram_matrix(a, M, N)
-  # G = gram_matrix(x, M, N)
-  # loss = (1./(4 * N**2 * M**2)) * tf.reduce_sum(tf.pow((G - A), 2))
-  # return loss
 
 def sum_style_losses(sess, net, style_imgs):
   total_style_loss = 0.
