@@ -59,7 +59,7 @@ if [ "$video" == "y" ]; then
   echo "Rendering stylized video frames [CPU & GPU]. This will take a while..."
   python neural_style.py --video \
   --video_input_dir "${temp_dir}" \
-  --style_imgs "${style_filename}" \
+  --style_img "${style_filename}" \
   --end_frame "${num_frames}" \
   --max_size "${max_size}";
 
