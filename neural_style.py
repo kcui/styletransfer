@@ -396,11 +396,9 @@ def get_prev_warped_frame(frame):
   imagepath = os.path.join('./video_output', 'frame_{}.ppm'.format(str(prevframe).zfill(4)))
 
   # read in previous image
-  prev_image = cv2.imread(path, cv2.IMREAD_COLOR)
-  check_image(image, imagepath)
-
-  path = os.path.join(args.video_input_dir,
-    'backward_{}_{}.flo'.format(str(frame), str(prevframe)))
+  prev_image = cv2.imread(imagepath, cv2.IMREAD_COLOR)
+  
+  path = os.path.join(args.video_input_dir, 'backward_{}_{}.flo'.format(str(frame), str(prevframe)))
   flow = read_flow_file(path)
 
   warped_img = warp_image(prev_image, flow).astype(np.float32)
