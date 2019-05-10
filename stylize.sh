@@ -12,7 +12,13 @@ echo ""
 read -p "Rendering video? [y/n] $cr > " video
 
 if [ "$video" == "y" ]; then
-    
+  FFMPEG=ffmpeg
+  command -v $FFMPEG >/dev/null 2>&1 || {
+    FFMPEG=avconv
+    command -v $FFMPEG >/dev/null 2>&1 || {
+      echo >&2 "This script requires either ffmpeg or avconv installed.  Aborting."; exit 1;
+    }
+  }
   # Parse arguments
   content_video="$1"
   content_dir=$(dirname "$content_video")
