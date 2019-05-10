@@ -98,13 +98,13 @@ Gets the content loss between the original content image (p) and the
 generated image (x), as described in the paper.
 '''
 def content_layer_loss(p, x):
-  # _, h, w, d = p.get_shape()
-  # M = h.value * w.value
-  # N = d.value
+  _, h, w, d = p.get_shape()
+  M = h.value * w.value
+  N = d.value
   # K = 1. / (2. * N**0.5 * M**0.5)
   # loss = K * tf.reduce_sum(tf.pow((x - p), 2))
   # return loss
-  return 0.5 * tf.reduce_sum(tf.square(x - p))
+  return 1 / (2 * N**.5 * M**.5) * tf.reduce_sum(tf.square(x - p))
 
 def gram(x):
   _, h, w, d = x.get_shape()
