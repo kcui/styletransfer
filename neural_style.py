@@ -277,11 +277,8 @@ def stylize(content_img, style_img, init_img, frame=None):
 
     # optimization algorithm
     optimizer = get_optimizer(L_total)
-
     minimize_with_lbfgs(sess, net, optimizer, init_img)
-
     output_img = sess.run(net['input'])
-
 
     if args.video:
       write_video_output(frame, output_img)
@@ -308,7 +305,8 @@ def write_video_output(frame, output_img):
 
 def write_image_output(output_img, content_img, style_img, init_img):
   out_dir = os.path.join('./image_output', 'result')
-  maybe_make_directory(out_dir)
+  if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
   img_path = os.path.join(out_dir, 'result.png')
   content_path = os.path.join(out_dir, 'content.png')
   init_path = os.path.join(out_dir, 'init.png')
