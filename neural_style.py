@@ -27,7 +27,7 @@ content_layers = ['conv4_2']
 # Contribution of each content layer to loss
 content_layer_weights = [1.0]
 # VGG19 layers to be used for style image
-style_layers = ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1']
+style_layers = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']
 # Contribution of each style layer to loss
 style_layer_weights = [0.2, 0.2, 0.2, 0.2, 0.2]
 # Max num iterations for L-BFGS optimizer
