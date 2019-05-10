@@ -108,37 +108,34 @@ def style_layer_loss(a, x):
   N = d.value
   return tf.reduce_sum(tf.square(gram(a) - gram(x))) / (4 * N**2 * M**2)
 
-def sum_content_losses(sess, net, content_img):
+'''
+Gets the summed losses (style or content) of the layers
+'''
+
+def sum_losses(sess, net, img, loss_type):
   sess.run(net['input'].assign(content_img))
-  content_loss = 0.
-  for layer, weight in zip(content_layers, content_layer_weights):
+  loss = 0.
+  layers = None
+  layer_weights = None
+  if loss_type == 'content':
+    layers = content_layers
+    layer_weights = content_layer_weights
+  else:
+    layers = style_layers
+    layer_weights = style_layer_weights
+  for layer, weight in zip(layers, layer_weights):
     p = sess.run(net[layer])
     x = net[layer]
     p = tf.convert_to_tensor(p)
-    content_loss += content_layer_loss(p, x) * weight
-  content_loss /= float(len(content_layers))
-  return content_loss
+    if loss_type == 'content':
+      loss += content_layer_loss(p, x) * weight
+    else:
+      loss += style_layer_loss(p, x) * weight
+  loss /= float(len(layers))
+  return loss
 
-'''
-Gets the total style loss for each of the specified style 
-'''
-def sum_style_losses(sess, net, style_img):
-  # for img, img_weight in zip(style_imgs, weights):
-  sess.run(net['input'].assign(style_img))
-  style_loss = 0.
-  for layer, weight in zip(style_layers, style_layer_weights):
-    a = sess.run(net[layer])
-    x = net[layer]
-    a = tf.convert_to_tensor(a)
-    style_loss += style_layer_loss(a, x) * weight
-  style_loss /= float(len(style_layers))
-  # total_style_loss += (style_loss * img_weight)
-  # total_style_loss /= float(len(style_imgs))
-  return style_loss
+# Loss functions from Ruder
 
-'''
-  'artistic style transfer for videos' loss functions
-'''
 def temporal_loss(x, w, c):
   c = c[np.newaxis,:,:,:]
   D = float(x.size)
@@ -246,57 +243,34 @@ def normalize(weights):
 '''
 def stylize(content_img, style_img, init_img, frame=None):
   with tf.device('/gpu:0'), tf.Session() as sess:
-    # setup network
+    # setup graph
     vgg = vgg19.VGG19(content_img, vgg_path=vgg_path)
     net = vgg.get_model()
 
-    # style loss
-    L_style = sum_style_losses(sess, net, style_img)
+    # get  all losses
+    content_loss = sum_losses(sess, net, content_img, loss_type='content')
+    style_loss = sum_losses(sess, net, style_img, loss_type='style')
+    total_variation_loss = tf.image.total_variation(net['input'])
 
-    # content loss
-    L_content = sum_content_losses(sess, net, content_img)
+    # calculate total loss by weight
+    loss = content_weight * content_loss + style_weight  * style_loss + total_variational_loss_weight * total_variation_loss
 
-    # denoising loss
-    L_tv = tf.image.total_variation(net['input'])
-
-    # loss weights
-    alpha = content_weight
-    beta  = style_weight
-    theta = total_variational_loss_weight
-
-    # total loss
-    L_total  = alpha * L_content
-    L_total += beta  * L_style
-    L_total += theta * L_tv
-
-    # video temporal loss
+    # if video, add temporal loss
     if args.video and frame > 1:
-      gamma      = temporal_weight
-      L_temporal = sum_shortterm_temporal_losses(sess, net, frame, init_img)
-      L_total   += gamma * L_temporal
+      loss = temporal_weight * sum_shortterm_temporal_losses(sess, net, frame, init_img)
 
-    # optimization algorithm
-    optimizer = get_optimizer(L_total)
-    minimize_with_lbfgs(sess, net, optimizer, init_img)
+    # start optimization procedure with LBFGS
+    init = tf.global_variables_initializer()
+    sess.run(init)
+    sess.run(net['input'].assign(init_img))
+    optimizer = tf.contrib.opt.ScipyOptimizerInterface(loss, method='L-BFGS-B',options={'maxiter': max_iterations})
+    optimizer.minimize(sess)
     output_img = sess.run(net['input'])
 
     if args.video:
       write_video_output(frame, output_img)
     else:
       write_image_output(output_img, content_img, style_img, init_img)
-
-def minimize_with_lbfgs(sess, net, optimizer, init_img):
-  print('\nMINIMIZING LOSS USING: L-BFGS OPTIMIZER')
-  init_op = tf.global_variables_initializer()
-  sess.run(init_op)
-  sess.run(net['input'].assign(init_img))
-  optimizer.minimize(sess)
-
-def get_optimizer(loss):
-
-  optimizer = tf.contrib.opt.ScipyOptimizerInterface(loss, method='L-BFGS-B',
-    options={'maxiter': max_iterations, 'disp': 50}) #50 print iterations
-  return optimizer
 
 def write_video_output(frame, output_img):
   fn = 'frame_{}.ppm'.format(str(frame).zfill(4))
