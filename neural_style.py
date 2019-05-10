@@ -1,10 +1,10 @@
 import tensorflow as tf
-import numpy as np 
-import scipy.io  
-import argparse 
+import numpy as np
+import scipy.io
+import argparse
 import struct
 import errno
-import time                       
+import time
 import cv2
 import os
 import vgg19
@@ -41,33 +41,33 @@ prev_frame_indices = [1]
 '''
 def parse_args():
 
-  desc = "TensorFlow implementation of 'A Neural Algorithm for Artistic Style'"  
+  desc = "TensorFlow implementation of 'A Neural Algorithm for Artistic Style'"
   parser = argparse.ArgumentParser(description=desc)
 
   parser.add_argument('--style_imgs', nargs='+', type=str,
-    help='Filenames of the style images (example: starry-night.jpg)', 
+    help='Filenames of the style images (example: starry-night.jpg)',
     required=True)
 
   parser.add_argument('--content_img', type=str,
     help='Filename of the content image (example: lion.jpg)')
 
-  parser.add_argument('--max_size', type=int, 
+  parser.add_argument('--max_size', type=int,
     default=512,
     help='Maximum width or height of the input images. (default: %(default)s)')
-  
-  parser.add_argument('--device', type=str, 
+
+  parser.add_argument('--device', type=str,
     default='/gpu:0',
     choices=['/gpu:0', '/cpu:0'],
     help='GPU or CPU mode.  GPU mode requires NVIDIA CUDA. (default|recommended: %(default)s)')
 
-  parser.add_argument('--video', action='store_true', 
+  parser.add_argument('--video', action='store_true',
     help='Boolean flag indicating if the user is generating a video.')
-  
-  parser.add_argument('--end_frame', type=int, 
+
+  parser.add_argument('--end_frame', type=int,
     default=1,
     help='Last frame number.')
-  
-  parser.add_argument('--video_input_dir', type=str, 
+
+  parser.add_argument('--video_input_dir', type=str,
     default='./video_input',
     help='Relative or absolute directory path to input frames.')
 
@@ -216,9 +216,9 @@ def read_flow_file(path):
   with open(path, 'rb') as f:
     # 4 bytes header
     header = struct.unpack('4s', f.read(4))[0]
-    # 4 bytes width, height    
+    # 4 bytes width, height
     w = struct.unpack('i', f.read(4))[0]
-    h = struct.unpack('i', f.read(4))[0]   
+    h = struct.unpack('i', f.read(4))[0]
     flow = np.ndarray((2, h, w), dtype=np.float32)
     for y in range(h):
       for x in range(w):
@@ -247,7 +247,7 @@ def normalize(weights):
   else: return [0.] * len(weights)
 
 def maybe_make_directory(dir_path):
-  if not os.path.exists(dir_path):  
+  if not os.path.exists(dir_path):
     os.makedirs(dir_path)
 
 def check_image(img, path):
@@ -262,26 +262,26 @@ def stylize(content_img, style_imgs, init_img, frame=None):
     # setup network
     vgg = vgg19.VGG19(content_img, vgg_path=vgg_path)
     net = vgg.get_model()
-    
+
     # style loss
     L_style = sum_style_losses(sess, net, style_imgs)
-    
+
     # content loss
     L_content = sum_content_losses(sess, net, content_img)
-    
+
     # denoising loss
     L_tv = tf.image.total_variation(net['input'])
-    
+
     # loss weights
     alpha = content_weight
     beta  = style_weight
     theta = total_variational_loss_weight
-    
+
     # total loss
     L_total  = alpha * L_content
     L_total += beta  * L_style
     L_total += theta * L_tv
-    
+
     # video temporal loss
     if args.video and frame > 1:
       gamma      = temporal_weight
@@ -292,9 +292,9 @@ def stylize(content_img, style_imgs, init_img, frame=None):
     optimizer = get_optimizer(L_total)
 
     minimize_with_lbfgs(sess, net, optimizer, init_img)
-    
+
     output_img = sess.run(net['input'])
-    
+
 
     if args.video:
       write_video_output(frame, output_img)
@@ -310,7 +310,7 @@ def minimize_with_lbfgs(sess, net, optimizer, init_img):
 
 def get_optimizer(loss):
 
-  optimizer = tf.contrib.opt.ScipyOptimizerInterface(loss, method='L-BFGS-B', 
+  optimizer = tf.contrib.opt.ScipyOptimizerInterface(loss, method='L-BFGS-B',
     options={'maxiter': max_iterations, 'disp': 50}) #50 print iterations
   return optimizer
 
@@ -334,7 +334,7 @@ def write_image_output(output_img, content_img, style_imgs, init_img):
     path = os.path.join(out_dir, 'style_'+str(index)+'.png')
     write_image(path, style_img)
     index += 1
-  
+
   # save the configuration settings
   out_file = os.path.join(out_dir, 'meta_data.txt')
   f = open(out_file, 'w')
@@ -404,25 +404,25 @@ def get_style_images(content_img):
     style_imgs.append(img)
   return style_imgs
 
-def get_prev_frame(frame):
-  # previously stylized frame
-  prev_frame = frame - 1
-  fn = 'frame_{}.ppm'.format(str(prev_frame).zfill(4))
-  path = os.path.join('./video_output', fn)
-  img = cv2.imread(path, cv2.IMREAD_COLOR)
-  check_image(img, path)
-  return img
-
 def get_prev_warped_frame(frame):
-  prev_img = get_prev_frame(frame)
-  prev_frame = frame - 1
-  # backwards flow: current frame -> previous frame
-  # 'backward_{}...' is the filename format for backward optical flow files
-  fn = 'backward_{}_{}.flo'.format(str(frame), str(prev_frame))
-  path = os.path.join(args.video_input_dir, fn)
+  prevframe = frame - 1
+
+  # get path to previous frame
+  imagepath = os.path.join(
+    './video_output', '
+    ''frame_{}.ppm'.format(str(prevframe).zfill(4)))
+
+  # read in previous image
+  prev_image = cv2.imread(path, cv2.IMREAD_COLOR)
+  check_image(image, imagepath)
+
+  path = os.path.join(args.video_input_dir,
+    'backward_{}_{}.flo'.format(str(frame), str(prevframe)))
   flow = read_flow_file(path)
-  warped_img = warp_image(prev_img, flow).astype(np.float32)
+
+  warped_img = warp_image(prev_image, flow).astype(np.float32)
   img = preprocess(warped_img)
+
   return img
 
 def get_content_weights(frame, prev_frame):
@@ -444,7 +444,7 @@ def warp_image(src, flow):
     flow_map[0,:,x] = float(x) + flow[0,:,x]
   # remap pixels to optical flow
   dst = cv2.remap(
-    src, flow_map[0], flow_map[1], 
+    src, flow_map[0], flow_map[1],
     interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_TRANSPARENT)
   return dst
 
@@ -469,7 +469,7 @@ def render_video():
         style_imgs = get_style_images(content_frame)
         # first frame type is 'content' by default
         init_img = get_init_image('content', content_frame, style_imgs, frame)
-        # Default max number of optimizer iterations of the first frame 
+        # Default max number of optimizer iterations of the first frame
         max_iterations = 2000
         tick = time.time()
         stylize(content_frame, style_imgs, init_img, frame)
@@ -478,7 +478,7 @@ def render_video():
       else:
         content_frame = get_content_frame(frame)
         style_imgs = get_style_images(content_frame)
-        # initial frame type is 'prev_warped' by default  
+        # initial frame type is 'prev_warped' by default
         init_img = get_init_image('prev_warped', content_frame, style_imgs, frame)
         # Default max number of optimizer iterations of the frames after first
         max_iterations = 800
