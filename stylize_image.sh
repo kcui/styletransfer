@@ -8,23 +8,6 @@ if [ "$#" -le 1 ]; then
    exit 1
 fi
 
-echo ""
-read -p "Did you install the required dependencies? [y/n] $cr > " dependencies
-
-if [ "$dependencies" != "y" ]; then
-  echo "Error: Requires dependencies: tensorflow, opencv2 (python), scipy"
-  exit 1;
-fi
-
-echo ""
-read -p "Do you have a CUDA enabled GPU? [y/n] $cr > " cuda
-
-if [ "$cuda" != "y" ]; then
-  device='/cpu:0'
-else
-  device='/gpu:0'
-fi
-
 # Parse arguments
 content_image="$1"
 content_filename=$(basename "$content_image")
@@ -36,4 +19,4 @@ echo "Rendering stylized image. This may take a while..."
 python neural_style.py \
 --content_img "${content_filename}" \
 --style_imgs "${style_filename}" \
---device "${device}";
+--device "/gpu:0";
