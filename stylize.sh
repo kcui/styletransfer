@@ -57,7 +57,7 @@ if [ "$video" == "y" ]; then
   cd ..
 
   echo "Rendering stylized video frames [CPU & GPU]. This will take a while..."
-  python neural_style.py --video \
+  python main.py --video \
   --video_input_dir "${temp_dir}" \
   --style_img "${style_filename}" \
   --end_frame "${num_frames}" \
@@ -81,7 +81,7 @@ else
   style_filename=$(basename "$style_image")
 
   echo "Rendering stylized image. This may take a while..."
-  python neural_style.py \
+  python main.py \
   --content_img "${content_filename}" \
   --style_img "${style_filename}" 
 fi

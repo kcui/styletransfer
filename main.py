@@ -35,7 +35,7 @@ max_iterations = 1000
 prev_frame_indices = [1]
 
 '''
-  parsing and configuration
+Parser initialization.
 '''
 def parse_args():
   parser = argparse.ArgumentParser()
@@ -58,13 +58,13 @@ def parse_args():
 
   args = parser.parse_args()
 
-  # normalize weights
+  # normalize
   global style_layer_weights
   global content_layer_weights
   style_layer_weights   = normalize(style_layer_weights)
   content_layer_weights = normalize(content_layer_weights)
 
-  # create directories for output
+  # create output directories
   dir_path = None
   if args.video:
     dir_path = './video_output'
@@ -135,7 +135,6 @@ def sum_losses(sess, net, img, loss_type):
   return loss
 
 # Loss functions from Ruder
-
 def temporal_loss(x, w, c):
   c = c[np.newaxis,:,:,:]
   D = float(x.size)
@@ -170,6 +169,9 @@ def sum_shortterm_temporal_losses(sess, net, frame, input_img):
   loss = temporal_loss(x, w, c)
   return loss
 
+'''
+Image processors.
+'''
 def read_image(path):
   # bgr image
   img = cv2.imread(path, cv2.IMREAD_COLOR)
@@ -200,6 +202,9 @@ def postprocess(img):
   imgpost = imgpost[...,::-1]
   return imgpost
 
+'''
+Flow and weight file ingestors.
+'''
 def read_flow_file(path):
   with open(path, 'rb') as f:
     # 4 bytes header
@@ -224,7 +229,6 @@ def read_weights_file(path):
     line = lines[i].rstrip().split(' ')
     vals[i-1] = np.array(list(map(np.float32, line)))
     vals[i-1] = list(map(lambda x: 0. if x < 255. else 1., vals[i-1]))
-  # expand to 3 channels
   weights = np.dstack([vals.astype(np.float32)] * 3)
   return weights
 
@@ -285,7 +289,6 @@ def write_image_output(output_img, content_img, style_img, init_img):
   style_path = os.path.join(out_dir, 'style.png')
   write_image(style_path, style_img)
 
-
 def get_init_image(init_type, content_img, style_img, frame=None):
   if init_type == 'content':
     return content_img
@@ -340,6 +343,10 @@ def get_prev_warped_frame(frame):
 
   return img
 
+'''
+Gets weights for each frame, taking into account forward and backwards
+optical flow.
+'''
 def get_content_weights(frame, prev_frame):
   # 'reliable_{}...' is the filename format for content optical flow files
   forward_fn = 'reliable_{}_{}.txt'.format(str(prev_frame), str(frame))
@@ -348,8 +355,11 @@ def get_content_weights(frame, prev_frame):
   backward_path = os.path.join(args.video_input_dir, backward_fn)
   forward_weights = read_weights_file(forward_path)
   backward_weights = read_weights_file(backward_path)
-  return forward_weights #, backward_weights
+  return forward_weights
 
+'''
+Warp the image based on optical flow, as outlined in Ruder's paper.
+'''
 def warp_image(src, flow):
   _, h, w = flow.shape
   flow_map = np.zeros(flow.shape, dtype=np.float32)
@@ -357,12 +367,14 @@ def warp_image(src, flow):
     flow_map[1,y,:] = float(y) + flow[1,y,:]
   for x in range(w):
     flow_map[0,:,x] = float(x) + flow[0,:,x]
-  # remap pixels to optical flow
   dst = cv2.remap(
     src, flow_map[0], flow_map[1],
     interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_TRANSPARENT)
   return dst
 
+'''
+Render functions; one for single images, one for videos.
+'''
 def render_single_image():
   content_img = get_content_image(args.content_img)
   style_img = get_style_image(content_img)
