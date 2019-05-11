@@ -10,7 +10,7 @@ Goals for this project include
 
 ### Algorithm
 #### Style transfer
-For style transfer, we load a pre-trained network (tf.keras's VGG19 from the paper [Very Deep Convolutional Networks for Large-Scale Image Recognition](https://arxiv.org/abs/1409.1556)) due to the hardware limitations of training our own image recognition network. Our task then becomes an optimization problem, where we seek to minimize two types of loss, namely
+For style transfer, we load a pre-trained network (VGG19 from the paper [Very Deep Convolutional Networks for Large-Scale Image Recognition](https://arxiv.org/abs/1409.1556)) due to the hardware limitations of training our own image recognition network. Our task then becomes an optimization problem, where we seek to minimize two types of loss, namely
 1. _content loss_—the difference between our content image (the image we wish to stylize) and (stylized) output images. This can be computed by passing the input and output through some network and calculating the Euclidean distance between the internal layers of the  network.
 2. _style loss_—the difference between our style image (the image that we used to style our content image) and (stylized) output images. This can be computed by passing the input and output through some network and comparing the Gram matrices of the outputs.
 
