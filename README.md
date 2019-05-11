@@ -24,7 +24,7 @@ For video style transfer, we use Manuel Ruder's algorithm as outlined in [Artist
 * Download and copy the [VGG-19 model weights file](http://www.vlfeat.org/matconvnet/pretrained/) (see the "VGG-VD models from the Very Deep Convolutional Networks for Large-Scale Visual Recognition project" section) `imagenet-vgg-verydeep-19.mat` and move it to the project directory
 
 ### Running
-Once all requirements have been installed, run `bash stylize.sh <path to content image or video> <path to style image>` in `styletransfer/`. This will prompt you to specify `y` or `n` to whether the content is a video. It will then run and save the resulting stylized image or video into the respective `image_output` or `video_output` folder.
+Once all requirements have been installed, run `bash stylize.sh <path to content image or video> <path to style image>` in `styletransfer/`. This will prompt you to specify `y` or `n` to whether the content is a video. It will then run and save the resulting stylized image or video into the respective `image_output/` or `video_output/` folder.
 
 If running on Google Compute Engine, first activate the virtual environment by running
 
