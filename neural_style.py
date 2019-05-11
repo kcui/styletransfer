@@ -111,6 +111,7 @@ def style_layer_loss(a, x):
 '''
 Gets the summed losses (style or content) of the layers
 '''
+
 def sum_losses(sess, net, img, loss_type):
   sess.run(net['input'].assign(img))
   loss = 0.
@@ -169,15 +170,15 @@ def sum_shortterm_temporal_losses(sess, net, frame, input_img):
   loss = temporal_loss(x, w, c)
   return loss
 
-def read_img(path):
+def read_image(path):
   # bgr image
   img = cv2.imread(path, cv2.IMREAD_COLOR)
   img = img.astype(np.float32)
   img = preprocess(img)
   return img
 
-def write_img(path, img):
-  img = deprocess(img)
+def write_image(path, img):
+  img = postprocess(img)
   cv2.imwrite(path, img)
 
 def preprocess(img):
@@ -189,7 +190,7 @@ def preprocess(img):
   imgpre -= np.array([123.68, 116.779, 103.939]).reshape((1,1,1,3))
   return imgpre
 
-def deprocess(img):
+def postprocess(img):
   imgpost = np.copy(img)
   imgpost += np.array([123.68, 116.779, 103.939]).reshape((1,1,1,3))
   # shape (1, h, w, d) to (h, w, d)
@@ -199,7 +200,7 @@ def deprocess(img):
   imgpost = imgpost[...,::-1]
   return imgpost
 
-def read_optical_flow(path):
+def read_flow_file(path):
   with open(path, 'rb') as f:
     # 4 bytes header
     header = struct.unpack('4s', f.read(4))[0]
@@ -213,7 +214,7 @@ def read_optical_flow(path):
         flow[1,y,x] = struct.unpack('f', f.read(4))[0]
   return flow
 
-def read_weights(path):
+def read_weights_file(path):
   lines = open(path).readlines()
   header = list(map(int, lines[0].split(' ')))
   w = header[0]
@@ -233,17 +234,13 @@ def normalize(weights):
     return [float(i) / denom for i in weights]
   else: return [0.] * len(weights)
 
-
-'''
-  rendering -- where the magic happens
-'''
 def stylize(content_img, style_img, init_img, frame=None):
   with tf.device('/gpu:0'), tf.Session() as sess:
     # setup graph
     vgg = vgg19.VGG19(content_img, vgg_path=vgg_path)
     net = vgg.get_model()
 
-    # get  all losses
+    # get all losses
     content_loss = sum_losses(sess, net, content_img, loss_type='content')
     style_loss = sum_losses(sess, net, style_img, loss_type='style')
     total_variation_loss = tf.image.total_variation(net['input'])
@@ -271,7 +268,7 @@ def stylize(content_img, style_img, init_img, frame=None):
 def write_video_output(frame, output_img):
   fn = 'frame_{}.ppm'.format(str(frame).zfill(4))
   path = os.path.join('./video_output', fn)
-  write_img(path, output_img)
+  write_image(path, output_img)
 
 def write_image_output(output_img, content_img, style_img, init_img):
   out_dir = os.path.join('./image_output', 'result')
@@ -281,16 +278,14 @@ def write_image_output(output_img, content_img, style_img, init_img):
   content_path = os.path.join(out_dir, 'content.png')
   init_path = os.path.join(out_dir, 'init.png')
 
-  write_img(img_path, output_img)
-  write_img(content_path, content_img)
-  write_img(init_path, init_img)
+  write_image(img_path, output_img)
+  write_image(content_path, content_img)
+  write_image(init_path, init_img)
 
   style_path = os.path.join(out_dir, 'style.png')
-  write_img(style_path, style_img)
+  write_image(style_path, style_img)
 
-'''
-  image loading and processing
-'''
+
 def get_init_image(init_type, content_img, style_img, frame=None):
   if init_type == 'content':
     return content_img
@@ -301,7 +296,7 @@ def get_init_image(init_type, content_img, style_img, frame=None):
 def get_content_frame(frame):
   fn = 'frame_{}.ppm'.format(str(frame).zfill(4))
   path = os.path.join(args.video_input_dir, fn)
-  img = read_img(path)
+  img = read_image(path)
   return img
 
 def get_content_image(content_img):
@@ -338,7 +333,7 @@ def get_prev_warped_frame(frame):
   # read in previous image
   prev_image = cv2.imread(imagepath, cv2.IMREAD_COLOR)
   path = os.path.join(args.video_input_dir, 'backward_{}_{}.flo'.format(str(frame), str(prevframe)))
-  flow = read_optical_flow(path)
+  flow = read_flow_file(path)
 
   warped_img = warp_image(prev_image, flow).astype(np.float32)
   img = preprocess(warped_img)
@@ -351,8 +346,8 @@ def get_content_weights(frame, prev_frame):
   backward_fn = 'reliable_{}_{}.txt'.format(str(frame), str(prev_frame))
   forward_path = os.path.join(args.video_input_dir, forward_fn)
   backward_path = os.path.join(args.video_input_dir, backward_fn)
-  forward_weights = read_weights(forward_path)
-  backward_weights = read_weights(backward_path)
+  forward_weights = read_weights_file(forward_path)
+  backward_weights = read_weights_file(backward_path)
   return forward_weights #, backward_weights
 
 def warp_image(src, flow):
@@ -372,36 +367,29 @@ def render_single_image():
   content_img = get_content_image(args.content_img)
   style_img = get_style_image(content_img)
   with tf.Graph().as_default():
-    init_img = content_img
+    init_img = get_init_image('content', content_img, style_img)
     tick = time.time()
     stylize(content_img, style_img, init_img)
     tock = time.time()
-    print('time taken: {}'.format(tock - tick))
+    print('Single image elapsed time: {}'.format(tock - tick))
 
 def render_video():
   for frame in range(1, args.end_frame+1):
     with tf.Graph().as_default():
-      print('\n---- RENDERING VIDEO FRAME: {}/{} ----\n'.format(frame, args.end_frame))
+      print('rendering frame {} of {}...\n'.format(frame, args.end_frame))
+      content_frame = get_content_frame(frame)
+      style_img = get_style_image(content_frame)
+      init_img = None
+      max_iterations = 800
       if frame == 1:
-        content_frame = get_content_frame(frame)
-        style_img = get_style_image(content_frame)
-        # first frame type is 'content' by default
         init_img = get_init_image('content', content_frame, style_img, frame)
-        # Default max number of optimizer iterations of the first frame
-        max_iterations = 2000
-        tick = time.time()
-        stylize(content_frame, style_img, init_img, frame)
-        tock = time.time()
-        print('Frame {} elapsed time: {}'.format(frame, tock - tick))
+        max_iterations += 1200
       else:
-        content_frame = get_content_frame(frame)
-        style_img = get_style_image(content_frame)
-        init_img = get_prev_warped_frame(frame)
-        max_iterations = 800
-        tick = time.time()
-        stylize(content_frame, style_img, init_img, frame)
-        tock = time.time()
-        print('Frame {} elapsed time: {}'.format(frame, tock - tick))
+        init_img = get_init_image('prev_warped', content_frame, style_img, frame)
+      start = time.time()
+      stylize(content_frame, style_img, init_img, frame)
+      end = time.time()
+      print('frame {} took {}s'.format(frame, end - start))
 
 def main():
   global args
